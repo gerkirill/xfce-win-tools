@@ -15,17 +15,30 @@ if [ "$active_win_id" == "0" ]; then
     active_win_id=""
 fi
 
-# Function to minimize windows on the same screen
+# Function to minimize windows on the same monitor
 minimize_other_windows() {
     local target_window_id="$1"
     
-    # Get the screen of the target window
-    local target_screen=$(wmctrl -l | grep "$target_window_id" | awk '{print $3}')
+    # Get the Y position of the target window
+    local target_y=$(xdotool getwindowgeometry "$target_window_id" grep "Position:" | awk -F'[:,]' '{print $3}' | grep -oE '^[0-9]+')
     
-    # Minimize windows on the same screen, excluding the target window
-    wmctrl -l | while read -r window_id desktop_num screen_num rest; do
-        if [[ "$window_id" != "$target_window_id" ]] && [[ "$screen_num" == "$target_screen" ]]; then
-            wmctrl -i -r "$window_id" -b add,hidden
+    # Determine monitor based on Y position
+    local monitor_threshold=1430
+    local target_monitor=$([[ "$target_y" -lt "$monitor_threshold" ]] && echo "top" || echo "bottom")
+    
+    # Get list of all windows
+    wmctrl -l | while read -r window_id desktop_num rest; do
+        # Skip the target window itself
+        if [[ "$window_id" != "$target_window_id" ]]; then
+            # Get window Y position
+            local window_y=$(xdotool getwindowgeometry "$window_id" grep "Position:" | awk -F'[:,]' '{print $3}' | grep -oE '^[0-9]+')
+            
+            # Check if window is on the same monitor
+            local window_monitor=$([[ "$window_y" -lt "$monitor_threshold" ]] && echo "top" || echo "bottom")
+            
+            if [[ "$window_monitor" == "$target_monitor" ]]; then
+                wmctrl -i -r "$window_id" -b add,hidden
+            fi
         fi
     done
 }
@@ -58,7 +71,7 @@ else
            # If the window matches the first argument, focus on it
             if [ $((i)) = $((IDs[idx])) ]; then
                 wmctrl -ia $i
-                # Minimize other windows on the same screen
+                # Minimize other windows on the same monitor
                 minimize_other_windows $i
                 exit 0
             fi
@@ -71,7 +84,7 @@ if [[ -n "${switch_to}" ]]
 then
     # Activate the window
     wmctrl -ia "$switch_to"
-    # Minimize other windows on the same screen
+    # Minimize other windows on the same monitor
     minimize_other_windows "$switch_to"
 
 # If there is no window which matches the first argument
