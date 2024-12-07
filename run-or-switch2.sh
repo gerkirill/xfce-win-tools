@@ -1,16 +1,9 @@
-# #!/bin/bash
-# if [ $# -lt 1 ] ; then
-#   echo "Usage : $0 <window name> [<command to run if there is no window with that name>]"
-#   exit 1
-# fi
+#!/bin/bash
 
 APP_NAME="${APP_NAME:-'Vivaldi'}"
 DEF_APP_COMMAND="${APP_NAME,,}"   # Command to launch the application (defaults to lowercase app name)
 APP_COMMAND="${APP_COMMAND:-$DEF_APP_COMMAND}"
 
-
-
-# app_name=$1
 app_name="${APP_NAME}"
 
 workspace_number=`wmctrl -d | grep '\*' | cut -d' ' -f 1`
@@ -21,6 +14,21 @@ active_win_id=`xprop -root | grep '^_NET_ACTIVE_W' | awk -F'# 0x' '{print $2}' |
 if [ "$active_win_id" == "0" ]; then
     active_win_id=""
 fi
+
+# Function to minimize windows on the same screen
+minimize_other_windows() {
+    local target_window_id="$1"
+    
+    # Get the screen of the target window
+    local target_screen=$(wmctrl -l | grep "$target_window_id" | awk '{print $3}')
+    
+    # Minimize windows on the same screen, excluding the target window
+    wmctrl -l | while read -r window_id desktop_num screen_num rest; do
+        if [[ "$window_id" != "$target_window_id" ]] && [[ "$screen_num" == "$target_screen" ]]; then
+            wmctrl -i -r "$window_id" -b add,hidden
+        fi
+    done
+}
 
 # If the window currently focused matches the first argument, seek the id of the next window in win_list which matches it
 if [[ "$win_list" == *"$active_win_id"* ]]; then
@@ -50,6 +58,8 @@ else
            # If the window matches the first argument, focus on it
             if [ $((i)) = $((IDs[idx])) ]; then
                 wmctrl -ia $i
+                # Minimize other windows on the same screen
+                minimize_other_windows $i
                 exit 0
             fi
         done
@@ -59,7 +69,10 @@ fi
 # If a window to focus on has been found, focus on it
 if [[ -n "${switch_to}" ]]
 then
-    (wmctrl -ia "$switch_to") &
+    # Activate the window
+    wmctrl -ia "$switch_to"
+    # Minimize other windows on the same screen
+    minimize_other_windows "$switch_to"
 
 # If there is no window which matches the first argument
 else
