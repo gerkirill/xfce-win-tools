@@ -41,6 +41,7 @@ minimize_other_windows() {
             fi
         fi
     done
+    sleep 0.4
 }
 
 # If the window currently focused matches the first argument, seek the id of the next window in win_list which matches it
@@ -70,9 +71,9 @@ else
 
            # If the window matches the first argument, focus on it
             if [ $((i)) = $((IDs[idx])) ]; then
-                wmctrl -ia $i
                 # Minimize other windows on the same monitor
                 minimize_other_windows $i
+                wmctrl -ia $i
                 exit 0
             fi
         done
@@ -82,10 +83,10 @@ fi
 # If a window to focus on has been found, focus on it
 if [[ -n "${switch_to}" ]]
 then
-    # Activate the window
-    wmctrl -ia "$switch_to"
     # Minimize other windows on the same monitor
     minimize_other_windows "$switch_to"
+    # Activate the window
+    wmctrl -ia "$switch_to"
 
 # If there is no window which matches the first argument
 else
