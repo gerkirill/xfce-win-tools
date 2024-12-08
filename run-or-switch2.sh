@@ -20,7 +20,7 @@ minimize_other_windows() {
     local target_window_id="$1"
     
     # Get the Y position of the target window
-    local target_y=$(xdotool getwindowgeometry "$target_window_id" grep "Position:" | awk -F'[:,]' '{print $3}' | grep -oE '^[0-9]+')
+    local target_y=$(xdotool getwindowgeometry "$target_window_id" | grep "Position:" | awk -F'[:,]' '{print $3}' | grep -oE '^[0-9]+')
     
     # Determine monitor based on Y position
     local monitor_threshold=1430
@@ -31,7 +31,7 @@ minimize_other_windows() {
         # Skip the target window itself
         if [[ "$window_id" != "$target_window_id" ]]; then
             # Get window Y position
-            local window_y=$(xdotool getwindowgeometry "$window_id" grep "Position:" | awk -F'[:,]' '{print $3}' | grep -oE '^[0-9]+')
+            local window_y=$(xdotool getwindowgeometry "$window_id" | grep "Position:" | awk -F'[:,]' '{print $3}' | grep -oE '^[0-9]+')
             
             # Check if window is on the same monitor
             local window_monitor=$([[ "$window_y" -lt "$monitor_threshold" ]] && echo "top" || echo "bottom")
