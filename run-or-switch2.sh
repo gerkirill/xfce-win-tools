@@ -15,9 +15,12 @@ if [ "$active_win_id" == "0" ]; then
     active_win_id=""
 fi
 
-# Function to minimize windows on the same monitor
+# Function to minimize windows on the same monitor and workspace
 minimize_other_windows() {
     local target_window_id="$1"
+    
+    # Get the desktop number of the target window
+    local target_desktop=$(wmctrl -l | grep "$target_window_id" | awk '{print $2}')
     
     # Get the Y position of the target window
     local target_y=$(xdotool getwindowgeometry "$target_window_id" | grep "Position:" | awk -F'[:,]' '{print $3}' | grep -oE '^[0-9]+')
@@ -28,8 +31,8 @@ minimize_other_windows() {
     
     # Get list of all windows
     wmctrl -l | while read -r window_id desktop_num rest; do
-        # Skip the target window itself
-        if [[ "$window_id" != "$target_window_id" ]]; then
+        # Skip the target window itself and windows not on the same workspace
+        if [[ "$window_id" != "$target_window_id" ]] && [[ "$desktop_num" == "$target_desktop" ]]; then
             # Get window Y position
             local window_y=$(xdotool getwindowgeometry "$window_id" | grep "Position:" | awk -F'[:,]' '{print $3}' | grep -oE '^[0-9]+')
             
@@ -41,7 +44,6 @@ minimize_other_windows() {
             fi
         fi
     done
-    sleep 0.4
 }
 
 # If the window currently focused matches the first argument, seek the id of the next window in win_list which matches it
